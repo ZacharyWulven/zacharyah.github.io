@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>程序的机器级表示(五) 过程</title>
+  <meta name="description" content="过程，是软件中的一个重要抽象。它提供一种封装代码的方式，用一组指定的参数和一个可选的返回值实现了某种功能。然后可以在程序中不同地方调用这个函数。">
+  <meta name="author" content="Wei Wang">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="程序的机器级表示(五) 过程">
+  <meta name="twitter:description" content="过程，是软件中的一个重要抽象。它提供一种封装代码的方式，用一组指定的参数和一个可选的返回值实现了某种功能。然后可以在程序中不同地方调用这个函数。">
+  
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="程序的机器级表示(五) 过程">
+  <meta property="og:description" content="过程，是软件中的一个重要抽象。它提供一种封装代码的方式，用一组指定的参数和一个可选的返回值实现了某种功能。然后可以在程序中不同地方调用这个函数。">
+  
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+  <link href="/assets/images/favicon.png" rel="shortcut icon" type="image/png">
+  
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link rel="canonical" href="http://localhost:4000/2021/06/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA(%E4%BA%94)-%E8%BF%87%E7%A8%8B/">
+  <link rel="alternate" type="application/rss+xml" title="Zachary" href="http://localhost:4000/feed.xml">
+  
+  <meta name="google-site-verification" content="1-1ZlHoRvM0T2FqPbW2S-qLgYXN6rsn52kErlMPd_gw" />
+  
+</head>
+
+
+  <body>
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+    
+    <header class="panel-cover panel-cover--collapsed" style="background-image: url('/assets/images/background-cover.jpg')">
+  <div class="panel-main">
+
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/#blog" title="前往 Zachary 的主页" class="blog-button"><img src="/assets/images/avatar.jpg" width="80" alt="Zachary logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/#blog" title="link to homepage for Zachary" class="blog-button">Zachary</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">生于忧患，死于安乐</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">Hi，我是 Zachary，一名 iOS 开发者，欢迎来到我的博客。</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        
+        <p class="panel-cover__description">这里不限于谈论技术，同时也会涉及个人兴趣爱好，如魂系列游戏、克苏鲁文学等。</p>
+        
+        
+        <div class="navigation-wrapper">
+          <div>
+            <nav class="cover-navigation cover-navigation--primary">
+              <ul class="navigation">
+                <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">博客</a></li>
+                
+              </ul>
+            </nav>
+          </div>
+          
+          <div><nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  
+
+  
+  
+  
+
+  
+
+  <!-- RSS -->
+  <li class="navigation__item">
+    <a href="/feed.xml" rel="author" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+  
+  <!-- Email -->
+  <li class="navigation__item">
+    <a href="mailto:poisontusk@gmail.com" title="Contact me">
+      <i class='social fa fa-envelope'></i>
+      <span class="label">Email</span>
+    </a>
+  </li>
+  
+
+  </ul>
+</nav>
+</div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="panel-cover--overlay cover-slate"></div>
+    
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single" itemscope itemtype="http://schema.org/BlogPosting">
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2021-06-14 14:45:30 +0800" itemprop="datePublished" class="post-meta__date date">2021-06-14</time> &#8226; <span class="post-meta__tags tags">CSApp</span>
+    </div>
+    <h1 class="post-title">程序的机器级表示(五) 过程</h1>
+  </header>
+
+  <section class="post">
+    <p>过程，是软件中的一个重要抽象。它提供一种封装代码的方式，用一组指定的参数和一个可选的返回值实现了某种功能。然后可以在程序中不同地方调用这个函数。</p>
+
+<h3 id="不同的编程语言过程形式多样">不同的编程语言，过程形式多样。</h3>
+<ol>
+  <li>函数</li>
+  <li>方法</li>
+  <li>子例程</li>
+  <li>处理函数</li>
+</ol>
+
+<p>假设 P 调用 Q，Q 执行后返回到 P。这些动作包括下面一个或多个机制：</p>
+<ol>
+  <li>传递控制，在进入 Q 的时候，程序计数器必须被设置为 Q 的代码起始地址，然后再返回，要把程序计数器设置为 P 中调用 Q 后那条指令的地址。</li>
+  <li>传递数据，P 必须能向 Q 提供一个或多个参数，Q 必须能够向 P 返回一个值。</li>
+  <li>分配和释放内存，在开始时，Q 可能需要位局部变量分配空间，而在返回前，又必须释放这些存储空间。</li>
+</ol>
+
+<h3 id="运行时栈">运行时栈</h3>
+<p>C 语言过程调用机制关键特性在于使用了栈数据结构提供的先进后出的内存管理原则。在 P 调用 Q 例子中，当 Q 被执行时，P 以及所有向上追溯到 P 调用链过程都暂时被挂起了。栈和程序寄存器存放着传递控制和数据、分配内存所需的信息。</p>
+
+<p>当 P 调用 Q 时，控制和数据信息被添加到栈尾，当 P 返回时这些信息被释放掉，</p>
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">x86</span><span class="o">-</span><span class="mi">64</span> <span class="err">栈向低地址方向增长，而栈指针</span> <span class="o">%</span><span class="n">rsp</span> <span class="err">指向栈顶元素。通过增加栈指针来释放空间。</span></code></pre></figure>
+
+<p>当 x86-64 过程需要的存储空间超过寄存器大小就会在栈上分配空间，这个部分称为“栈帧 stack frame”</p>
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="err">大多数栈帧都是定长的。通过寄存器过程</span> <span class="no">P</span> <span class="err">可以传递最多</span> <span class="mi">6</span> <span class="err">个整数值（指针或整数）。超过则使用栈帧。</span></code></pre></figure>
+
+<h3 id="转移控制">转移控制</h3>
+<p>将控制从函数 P 转移到 Q 只需要把程序计数器设置为 Q 的代码起始地址，不过之后从 Q 返回时，处理器必须记录号它需要继续 P 执行的代码位置。</p>
+
+<p>在 x86-64 这个信息用执行 call Q 调用过程来记录的，该指令把地址 A 压入栈中，并将 PC 设置为 Q 的起始地址。压入地址 A 被称为返回地址。是紧跟在 call 指令后面的那条指令地址。 对应 ret 会从栈中弹出地址 A，并把 PC 设置为 A。</p>
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">call</span> <span class="err">指令有个一个目的，即指明被调用过程起始地址的指令地址。同跳转一样，调用可以是直接的或间接的。直接用标号，间接的用</span> <span class="o">*</span> <span class="err">后边跟操作指示符</span></code></pre></figure>
+
+<h4 id="例子下面两个函数-first-和-last-反汇编代码以及-main-函数">例子，下面两个函数 first 和 last 反汇编代码，以及 main 函数</h4>
+
+<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="no">Disassembly</span> <span class="n">of</span> <span class="n">last</span><span class="p">(</span><span class="n">long</span> <span class="n">u</span><span class="p">,</span> <span class="n">long</span> <span class="n">v</span><span class="p">)</span>
+<span class="n">u</span> <span class="k">in</span> <span class="o">%</span><span class="n">rdi</span><span class="p">,</span> <span class="n">v</span> <span class="k">in</span> <span class="o">%</span><span class="n">rsi</span>
+<span class="mo">0000000000400540</span> <span class="o">&lt;</span><span class="n">last</span><span class="o">&gt;</span><span class="p">:</span>
+<span class="mi">400540</span><span class="p">:</span>  <span class="mi">48</span> <span class="mi">89</span> <span class="n">f8</span>           <span class="n">mov</span> <span class="o">%</span><span class="n">rdi</span><span class="p">,</span><span class="o">%</span><span class="n">rax</span>          <span class="no">L1</span><span class="p">:</span> <span class="n">u</span>
+<span class="mi">400543</span><span class="p">:</span>  <span class="mi">48</span> <span class="mi">0</span><span class="n">f</span> <span class="n">af</span> <span class="n">c6</span>        <span class="n">imul</span> <span class="o">%</span><span class="n">rsi</span><span class="p">,</span><span class="o">%</span><span class="n">rax</span>         <span class="no">L2</span><span class="p">:</span> <span class="n">u</span> <span class="o">*</span> <span class="n">v</span>
+<span class="mi">400547</span><span class="p">:</span>  <span class="n">c3</span>                 <span class="n">retq</span>                   <span class="no">L3</span><span class="p">:</span> <span class="no">Return</span>
+
+<span class="no">Disassembly</span> <span class="n">of</span> <span class="n">first</span><span class="p">(</span><span class="n">long</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="k">in</span> <span class="o">%</span><span class="n">rdi</span>
+<span class="mo">000000000040054</span><span class="mi">8</span> <span class="o">&lt;</span><span class="n">first</span><span class="o">&gt;</span><span class="p">:</span>
+<span class="mi">400548</span><span class="p">:</span>  <span class="mi">48</span> <span class="mi">8</span><span class="n">d</span> <span class="mi">77</span> <span class="mo">01</span>        <span class="n">lea</span> <span class="mh">0x1</span><span class="p">(</span><span class="o">%</span><span class="n">rdi</span><span class="p">),</span><span class="o">%</span><span class="n">rsi</span>     <span class="no">F1</span><span class="p">:</span> <span class="n">x</span><span class="o">+</span><span class="mi">1</span>
+<span class="mi">40054</span><span class="ss">c:  </span><span class="mi">48</span> <span class="mi">83</span> <span class="n">ef</span> <span class="mo">01</span>        <span class="nb">sub</span>  <span class="vg">$0x1</span><span class="p">,</span><span class="o">%</span><span class="n">rdi</span>         <span class="no">F2</span><span class="p">:</span> <span class="n">x</span><span class="o">-</span><span class="mi">1</span>
+<span class="mi">400550</span><span class="p">:</span>  <span class="n">e8</span> <span class="n">eb</span> <span class="n">ff</span> <span class="n">ff</span> <span class="n">ff</span>     <span class="n">callq</span> <span class="mi">400540</span> <span class="o">&lt;</span><span class="n">last</span><span class="o">&gt;</span>    <span class="no">F3</span><span class="p">:</span> <span class="no">Call</span> <span class="n">last</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="mi">400555</span><span class="p">:</span>  <span class="n">f3</span> <span class="n">c3</span>              <span class="n">repz</span> <span class="n">retq</span>              <span class="no">F4</span><span class="p">:</span> <span class="no">Return</span>
+<span class="p">.</span>
+<span class="nf">.</span>
+<span class="o">.</span>
+<span class="mi">400560</span><span class="p">:</span>  <span class="n">e8</span> <span class="n">e3</span> <span class="n">ff</span> <span class="n">ff</span> <span class="n">ff</span>     <span class="n">callq</span> <span class="mi">400548</span> <span class="o">&lt;</span><span class="n">first</span><span class="o">&gt;</span>   <span class="no">M1</span><span class="p">:</span> <span class="no">Call</span> <span class="n">first</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="mi">400565</span><span class="p">:</span>  <span class="mi">48</span> <span class="mi">89</span> <span class="n">c2</span>           <span class="n">mov</span> <span class="o">%</span><span class="n">rax</span><span class="p">,</span><span class="o">%</span><span class="n">rdx</span>          <span class="no">M2</span><span class="p">:</span> <span class="no">Resume</span>
+
+
+<span class="err">指令</span>                  <span class="o">|</span> <span class="err">状态值</span>
+<span class="err">标号</span>     <span class="no">PC</span>     <span class="err">指令</span>     <span class="o">%</span><span class="n">rdi</span>  <span class="o">%</span><span class="n">rsi</span>  <span class="o">%</span><span class="n">rax</span>       <span class="o">%</span><span class="n">rsp</span>              <span class="o">*%</span><span class="n">rsp</span>             <span class="err">描述</span>
+<span class="no">M1</span>   <span class="mh">0x400560</span>  <span class="n">callq</span>     <span class="mi">10</span>    <span class="o">-</span>     <span class="o">-</span>    <span class="mh">0x7fffffffe820</span>           <span class="o">-</span>           <span class="err">调用</span> <span class="n">fisrt</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="no">F1</span>   <span class="mh">0x400548</span>  <span class="n">lea</span>       <span class="mi">10</span>    <span class="o">-</span>     <span class="o">-</span>    <span class="mh">0x7fffffffe818</span>        <span class="mh">0x400565</span>       <span class="n">first</span> <span class="err">入口</span>
+<span class="no">F2</span>   <span class="mh">0x40054c</span>  <span class="nb">sub</span>       <span class="mi">10</span>    <span class="mi">11</span>    <span class="o">-</span>    <span class="mh">0x7fffffffe818</span>        <span class="mh">0x400565</span>
+<span class="no">F3</span>   <span class="mh">0x400550</span>  <span class="n">callq</span>     <span class="mi">9</span>     <span class="mi">11</span>    <span class="o">-</span>    <span class="mh">0x7fffffffe818</span>        <span class="mh">0x400565</span>       <span class="err">调用</span> <span class="n">last</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">11</span><span class="p">)</span>
+<span class="no">L1</span>   <span class="mh">0x400540</span>  <span class="n">mov</span>       <span class="mi">9</span>     <span class="mi">11</span>    <span class="o">-</span>    <span class="mh">0x7fffffffe810</span>        <span class="mh">0x400555</span>       <span class="n">last</span> <span class="err">入口</span>
+<span class="no">L2</span>   <span class="mh">0x400543</span>  <span class="n">imul</span>      <span class="mi">9</span>     <span class="mi">11</span>    <span class="mi">9</span>    <span class="mh">0x7fffffffe810</span>        <span class="mh">0x400555</span>       
+<span class="no">L3</span>   <span class="mh">0x400547</span>  <span class="n">retq</span>      <span class="mi">9</span>     <span class="mi">11</span>    <span class="mi">99</span>   <span class="mh">0x7fffffffe810</span>        <span class="mh">0x400555</span>       <span class="err">从</span> <span class="n">last</span> <span class="err">返回</span> <span class="mi">99</span>
+<span class="no">F4</span>   <span class="mh">0x400555</span>  <span class="n">repq</span> <span class="n">repq</span> <span class="mi">9</span>     <span class="mi">11</span>    <span class="mi">99</span>   <span class="mh">0x7fffffffe818</span>        <span class="mh">0x400565</span>       <span class="err">从</span> <span class="n">first</span> <span class="err">返回</span> <span class="mi">99</span>
+<span class="no">M2</span>   <span class="mh">0x400565</span>  <span class="n">mov</span>       <span class="mi">9</span>     <span class="mi">11</span>    <span class="mi">99</span>   <span class="mh">0x7fffffffe820</span>            <span class="o">-</span>          <span class="err">继续执行</span> <span class="n">main</span></code></pre></figure>
+
+
+  </section>
+</article>
+
+<section class="read-more">
+   
+   
+   
+   
+   <div class="read-more-item">
+       <span class="read-more-item-dim">更早的文章</span>
+       <h2 class="post-list__post-title post-title"><a href="/2021/06/%E6%B8%85%E9%85%92%E5%85%A5%E9%97%A8/" title="link to 清酒入门">清酒入门</a></h2>
+       <p class="excerpt">清酒就是酿造米酒，15 度左右特定名称酒1 纯米酒2 本酿造3 吟酿                 精米步合 50%~60%4 大吟酿                精米步合 50% 以下5 纯米吟酿6 纯米大吟酿7 特别本酿造8 特别纯米酒清酒分类原料维度  纯米酒：只用米、米糊，不使用酿造酒精，米本身风味更加突出。  本酿造：用米、米糊并使用少量酿造酒精，为了增加香气，日本法律规定酿造酒精重量不能超过米重量的 10%。精米步合维度（即磨米度）因为米的外层有非常多的蛋白质和脂肪，它们会...&hellip;</p>
+       <div class="post-list__meta"><time datetime="2021-06-03 21:45:30 +0800" class="post-list__meta--date date">2021-06-03</time> &#8226; <span class="post-list__meta--tags tags">酒 清酒</span><a class="btn-border-small" href=/2021/06/%E6%B8%85%E9%85%92%E5%85%A5%E9%97%A8/>继续阅读</a></div>
+   </div>
+   
+</section>
+
+<section class="post-comments">
+  
+    <div id="disqus_thread"></div>
+    <script>
+    
+    var disqus_config = function () {
+        this.page.url = "http://localhost:4000/2021/06/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA(%E4%BA%94)-%E8%BF%87%E7%A8%8B/";
+        this.page.identifier = "/2021/06/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA(%E4%BA%94)-%E8%BF%87%E7%A8%8B/";
+    };
+
+    var disqus_shortname = 'Zachary';
+    
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        s.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        })();
+    </script>
+    <noscript>要查看<a href="http://disqus.com/?ref_noscript"> Disqus </a>评论，请启用 JavaScript</noscript>
+    
+  
+  
+  
+  
+</section>
+
+
+            <section class="footer">
+    <footer>
+    	<span class="footer__copyright">本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享 署名-非商业性使用-相同方式共享 4.0 国际 许可协议</a></span>
+        <span class="footer__copyright">由 <a href="https://jekyllrb.com">Jekyll</a> 于 2021-06-14 生成，感谢 <a href="https://www.digitalocean.com/?refcode=30ed2d146762">Digital Ocean</a> 为本站提供稳定的 VPS 服务</span>
+        <span class="footer__copyright">本站采用 <a href="https://github.com/onevcat/vno-jekyll">Vno - Jekyll</a> 作为主题，您可以在 GitHub 找到<a href="https://github.com/onevcat/OneV-s-Den">本站源码</a> - &copy; 2021</span>
+    </footer>
+</section>
+
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+
+<script type="text/javascript" src="/js/main.js"></script>
+
+
+
+    
+  </body>
+
+</html>

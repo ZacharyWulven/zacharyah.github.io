@@ -5,9 +5,91 @@
     <description>Hi，我是 Zachary，一名 iOS 开发者，欢迎来到我的博客。</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 14 Jun 2021 16:13:12 +0800</pubDate>
-    <lastBuildDate>Mon, 14 Jun 2021 16:13:12 +0800</lastBuildDate>
+    <pubDate>Mon, 14 Jun 2021 18:16:14 +0800</pubDate>
+    <lastBuildDate>Mon, 14 Jun 2021 18:16:14 +0800</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>程序的机器级表示(五) 过程</title>
+        <description>&lt;p&gt;过程，是软件中的一个重要抽象。它提供一种封装代码的方式，用一组指定的参数和一个可选的返回值实现了某种功能。然后可以在程序中不同地方调用这个函数。&lt;/p&gt;
+
+&lt;h3 id=&quot;不同的编程语言过程形式多样&quot;&gt;不同的编程语言，过程形式多样。&lt;/h3&gt;
+&lt;ol&gt;
+  &lt;li&gt;函数&lt;/li&gt;
+  &lt;li&gt;方法&lt;/li&gt;
+  &lt;li&gt;子例程&lt;/li&gt;
+  &lt;li&gt;处理函数&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;假设 P 调用 Q，Q 执行后返回到 P。这些动作包括下面一个或多个机制：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;传递控制，在进入 Q 的时候，程序计数器必须被设置为 Q 的代码起始地址，然后再返回，要把程序计数器设置为 P 中调用 Q 后那条指令的地址。&lt;/li&gt;
+  &lt;li&gt;传递数据，P 必须能向 Q 提供一个或多个参数，Q 必须能够向 P 返回一个值。&lt;/li&gt;
+  &lt;li&gt;分配和释放内存，在开始时，Q 可能需要位局部变量分配空间，而在返回前，又必须释放这些存储空间。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;运行时栈&quot;&gt;运行时栈&lt;/h3&gt;
+&lt;p&gt;C 语言过程调用机制关键特性在于使用了栈数据结构提供的先进后出的内存管理原则。在 P 调用 Q 例子中，当 Q 被执行时，P 以及所有向上追溯到 P 调用链过程都暂时被挂起了。栈和程序寄存器存放着传递控制和数据、分配内存所需的信息。&lt;/p&gt;
+
+&lt;p&gt;当 P 调用 Q 时，控制和数据信息被添加到栈尾，当 P 返回时这些信息被释放掉，&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;x86&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;64&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;栈向低地址方向增长，而栈指针&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;指向栈顶元素。通过增加栈指针来释放空间。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;当 x86-64 过程需要的存储空间超过寄存器大小就会在栈上分配空间，这个部分称为“栈帧 stack frame”&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;大多数栈帧都是定长的。通过寄存器过程&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;P&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;可以传递最多&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;个整数值（指针或整数）。超过则使用栈帧。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3 id=&quot;转移控制&quot;&gt;转移控制&lt;/h3&gt;
+&lt;p&gt;将控制从函数 P 转移到 Q 只需要把程序计数器设置为 Q 的代码起始地址，不过之后从 Q 返回时，处理器必须记录号它需要继续 P 执行的代码位置。&lt;/p&gt;
+
+&lt;p&gt;在 x86-64 这个信息用执行 call Q 调用过程来记录的，该指令把地址 A 压入栈中，并将 PC 设置为 Q 的起始地址。压入地址 A 被称为返回地址。是紧跟在 call 指令后面的那条指令地址。 对应 ret 会从栈中弹出地址 A，并把 PC 设置为 A。&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;call&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;指令有个一个目的，即指明被调用过程起始地址的指令地址。同跳转一样，调用可以是直接的或间接的。直接用标号，间接的用&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;后边跟操作指示符&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h4 id=&quot;例子下面两个函数-first-和-last-反汇编代码以及-main-函数&quot;&gt;例子，下面两个函数 first 和 last 反汇编代码，以及 main 函数&lt;/h4&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;no&quot;&gt;Disassembly&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;u&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;u&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;
+&lt;span class=&quot;mo&quot;&gt;0000000000400540&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400540&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f8&lt;/span&gt;           &lt;span class=&quot;n&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;          &lt;span class=&quot;no&quot;&gt;L1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;u&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400543&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;af&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c6&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;imul&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;         &lt;span class=&quot;no&quot;&gt;L2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;u&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400547&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt;                 &lt;span class=&quot;n&quot;&gt;retq&lt;/span&gt;                   &lt;span class=&quot;no&quot;&gt;L3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Return&lt;/span&gt;
+
+&lt;span class=&quot;no&quot;&gt;Disassembly&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+&lt;span class=&quot;mo&quot;&gt;000000000040054&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400548&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;77&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;01&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;lea&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;     &lt;span class=&quot;no&quot;&gt;F1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;40054&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;c:  &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;83&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ef&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;01&lt;/span&gt;        &lt;span class=&quot;nb&quot;&gt;sub&lt;/span&gt;  &lt;span class=&quot;vg&quot;&gt;$0x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;         &lt;span class=&quot;no&quot;&gt;F2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400550&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;e8&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eb&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;callq&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;400540&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;    &lt;span class=&quot;no&quot;&gt;F3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Call&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400555&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;f3&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt;              &lt;span class=&quot;n&quot;&gt;repz&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;retq&lt;/span&gt;              &lt;span class=&quot;no&quot;&gt;F4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Return&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400560&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;e8&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e3&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;callq&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;400548&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;   &lt;span class=&quot;no&quot;&gt;M1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Call&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;400565&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt;           &lt;span class=&quot;n&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;          &lt;span class=&quot;no&quot;&gt;M2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Resume&lt;/span&gt;
+
+
+&lt;span class=&quot;err&quot;&gt;指令&lt;/span&gt;                  &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;状态值&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;标号&lt;/span&gt;     &lt;span class=&quot;no&quot;&gt;PC&lt;/span&gt;     &lt;span class=&quot;err&quot;&gt;指令&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;       &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;              &lt;span class=&quot;o&quot;&gt;*%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;             &lt;span class=&quot;err&quot;&gt;描述&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;M1&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400560&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;callq&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe820&lt;/span&gt;           &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;           &lt;span class=&quot;err&quot;&gt;调用&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fisrt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;F1&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400548&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;lea&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe818&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400565&lt;/span&gt;       &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;入口&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;F2&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x40054c&lt;/span&gt;  &lt;span class=&quot;nb&quot;&gt;sub&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe818&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400565&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;F3&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400550&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;callq&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe818&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400565&lt;/span&gt;       &lt;span class=&quot;err&quot;&gt;调用&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;L1&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400540&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;mov&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe810&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400555&lt;/span&gt;       &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;入口&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;L2&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400543&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;imul&lt;/span&gt;      &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x7fffffffe810&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400555&lt;/span&gt;       
+&lt;span class=&quot;no&quot;&gt;L3&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400547&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;retq&lt;/span&gt;      &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;99&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x7fffffffe810&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400555&lt;/span&gt;       &lt;span class=&quot;err&quot;&gt;从&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;返回&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;99&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;F4&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400555&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;repq&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;repq&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;99&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x7fffffffe818&lt;/span&gt;        &lt;span class=&quot;mh&quot;&gt;0x400565&lt;/span&gt;       &lt;span class=&quot;err&quot;&gt;从&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;返回&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;99&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;M2&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400565&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;mov&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;     &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;99&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x7fffffffe820&lt;/span&gt;            &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;          &lt;span class=&quot;err&quot;&gt;继续执行&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+</description>
+        <pubDate>Mon, 14 Jun 2021 14:45:30 +0800</pubDate>
+        <link>http://localhost:4000/2021/06/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA(%E4%BA%94)-%E8%BF%87%E7%A8%8B/</link>
+        <guid isPermaLink="true">http://localhost:4000/2021/06/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA(%E4%BA%94)-%E8%BF%87%E7%A8%8B/</guid>
+        
+        <category>CSApp</category>
+        
+        
+      </item>
     
       <item>
         <title>清酒入门</title>
@@ -1675,157 +1757,6 @@ Either 的设计归档了它要么持有“左值”，要么持有“右值”�
         <guid isPermaLink="true">http://localhost:4000/2021/02/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B9%8B%E5%B7%A5%E5%8E%82(%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA)/</guid>
         
         <category>设计模式 iOS</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>函数式编程思想 (二)</title>
-        <description>&lt;h3 id=&quot;权责让渡&quot;&gt;权责让渡&lt;/h3&gt;
-&lt;p&gt;函数式思维的好处之一，是能够将底层次细节（如垃圾机制）的控制权移交给运行时，从而消除一大批注定会发生的程序错误。
-下面将讲述向语言和运行时让渡控制权的五各种途径。&lt;/p&gt;
-
-&lt;h4 id=&quot;一迭代让位于高阶函数&quot;&gt;一、迭代让位于高阶函数&lt;/h4&gt;
-&lt;p&gt;用 map 等函数替换了迭代。用高阶函数的操作表达出来，语言将会把操作安排得更高效。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;理解掌握的抽象层次永远要比日常使用的抽象层次更深一层&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;h4 id=&quot;二闭包-closure&quot;&gt;二、闭包 closure&lt;/h4&gt;
-&lt;p&gt;闭包是所有函数式语言都具备的一项平等特性。所谓闭包实际上是一种特殊的函数，它在暗地里绑定了函数内部引用的所有变量。
-换句话说，这种函数把它引用的所有东西都放在一个上下文里“包”了起来。&lt;/p&gt;
-
-&lt;p&gt;闭包这个名字来源于创建封闭上下文的行为。虽然局部变量不是在代码块里定义的，但是只要代码块引用了改变量，两者就绑定在一起了，
-这个联系在代码块实例的全生命周期都一直保持。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;makeAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-      &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;add&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;makeAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;makeAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;闭包还是推迟执行原则的绝佳样板。我们把代码绑定到闭包之后，可以推迟到适当的时机再执行闭包。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;抓住上下文，而非状态。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;h3 id=&quot;三柯里化和函数的部分施用&quot;&gt;三、柯里化和函数的部分施用&lt;/h3&gt;
-&lt;p&gt;柯里化 （currying） 和函数的部分（partial application）施用都是从数学里借用过来的编程语言技法。这两种技法以不同的面面出现在各种类型的语法里，
-在函数式语言里尤为普遍。&lt;/p&gt;
-
-&lt;p&gt;柯里化和函数的部分施用都有能力操纵函数或方法的参数数目，一般是通过向一部分参数代入一个或多个默认值的办法来实现的。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;这部分参数称为&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;“固定参数”。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;定义与辨析&lt;/p&gt;
-
-&lt;p&gt;柯里化是指从一个多参数函数变成一个连串单参数函数的变换。它描述的是变换的过程，不涉及变换后对函数的调用。
-调用者可以决定对多少个参数实施变换，余下部分将衍生位一个参数数目较少的新函数。&lt;/p&gt;
-
-&lt;p&gt;部分施用指通过提前代入一部分参数值，使一个多参数得以省略部分参数，从而转换为一个参数数目较少的新函数。
-顾名思义，也就是让函数先作用域其中一些参数，经过部分的求解，结果返回一个由余下参数构成签名的函数。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;volume&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;w&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;area&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;volume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;curry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;lengthPA&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;volume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;curry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;             &lt;span class=&quot;err&quot;&gt;部分施用&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;lengthC&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;volume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;curry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;curry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;柯里化&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;柯里化和部分施用都是在我们提供部分参数值后，产出可以凭借余下参数实施调用的一个函数。
-区别在于：&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;柯里化的结果是返回链条中的下一个函数。&lt;/span&gt;
-&lt;span class=&quot;err&quot;&gt;部分施用是把参数的取值绑定到用户在操作中提供的具体值上。而产生一个“元数（参数数目）”较少的函数。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;函数式编程赋予我们另一套新的构造单元。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;复合（&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;composition&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;）是函数式语言拼组这些构造单元的一般方式。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;h3 id=&quot;四递归&quot;&gt;四、递归&lt;/h3&gt;
-&lt;p&gt;递归，按照维基百科的定义，是 “以一种自相似的方式来重复事物的过程”。&lt;/p&gt;
-
-&lt;p&gt;在 C 或类 C 语言出身的开发者的头脑中，列表概念通常会被塑造成一个带索引的集合。
-但对于诸多函数式语言来说，它们眼中的列表形象有些不一样。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;他们看到的不是再索引的格子，而是看成由列表的第一个元素（叫做头部）和列表的其余元素（叫做尾部）这两部分组成。&lt;/span&gt;
-&lt;span class=&quot;err&quot;&gt;把列表想象成头部和尾部组合，有利于使用递归方式来组织迭代。&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;[1, 2, 3, 4, 5, 6], 1 则是头部，2 3 4 5 6 则是尾部&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;array&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]()&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;item&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;condition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-          &lt;span class=&quot;n&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;array&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isEven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;number: &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Bool&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;filterFunctional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;isEmpty&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subList&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;..&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;endIndex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;condition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subList&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subList&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;filterFunctional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;condition: &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;在 filter 命令式写法中是“我”在管理状态，“我”必须创建一个 array 的列表，“我”负责向新列表中添加元素，“我”负责在筛选后返回列表。
-而在递归写法中，是语言在管理返回值，它从递归栈中收集每次调用的返回结果，构造出最终结果。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;利用递归，把状态的管理责任推给运行时。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;h4 id=&quot;尾调用优化-tail-call-optimization&quot;&gt;尾调用优化 （tail-call optimization）&lt;/h4&gt;
-&lt;p&gt;递归没有成为一种平常的操作，其中一个主要原因是栈的增长。递归操作一般的实现都是把中间结果放在栈里，于是没有为递归专门优化的语言就会遇到栈溢出的问题。&lt;/p&gt;
-
-&lt;p&gt;开发者也可以在这个问题上出一点力，使用尾调用优化的写法来帮助运行时克服栈增长的问题。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;当递归调用是函数执行的最后一个调用的时候，运行时往往可以在栈里就地更新，而不需要增加新的栈空间。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;h3 id=&quot;五stream-和作业顺序重排&quot;&gt;五、Stream 和作业顺序重排&lt;/h3&gt;
-&lt;p&gt;stream 很多方面与集合相似，但它不像集合那样事先就备妥所有的值，而是需要的时候才让数据从源头“流”向目的地。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cleanOdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;list: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;isEmpty&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;vg&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;vg&quot;&gt;$0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stringList&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;3&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;4&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;5&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;6&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;7&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;8&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;9&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;上边代码 map 和 filter 都是缓求值（lazy）的操作，它们会被尽量地推迟执行。实际在下游的终结操作“发出要求”前，它们都不会产生任何结果。&lt;/p&gt;
-
-&lt;p&gt;我们必须保证传给 filter 等函数块不存在副作用，否则可能导致无法预料的结果。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;err&quot;&gt;允许运行时发挥其优化能力，交出控制权，放弃对繁琐细节掌控，关注问题域，而非关注问题域的实现很重要。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-</description>
-        <pubDate>Sun, 07 Feb 2021 22:14:30 +0800</pubDate>
-        <link>http://localhost:4000/2021/02/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E6%80%9D%E6%83%B3-(%E4%BA%8C)/</link>
-        <guid isPermaLink="true">http://localhost:4000/2021/02/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E6%80%9D%E6%83%B3-(%E4%BA%8C)/</guid>
-        
-        <category>函数式编程 Swift</category>
         
         
       </item>
